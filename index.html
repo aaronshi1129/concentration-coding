@@ -1,0 +1,456 @@
+<html><head><base href="." /><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GAS Vocabulary Concentration</title>
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-container {
+    max-width: 800px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.card {
+    background: #2196f3;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 80px;
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: transform 0.3s ease;
+    transform-style: preserve-3d;
+    font-size: 16px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card.flipped {
+    background: #4caf50;
+}
+
+.card.matched {
+    background: #81c784;
+    cursor: default;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.button {
+    background: #2196f3;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.button:hover {
+    background: #1976d2;
+}
+
+@keyframes celebrate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.celebration {
+    animation: celebrate 0.5s ease;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.timer {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2196f3;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.modal img {
+    max-width: 200px;
+    margin: 0 auto;
+    display: block;
+}
+
+.close-modal {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Vocabulary Concentration (Coding)</h1>
+        <p class="subtitle">Complete this concentration game successfully and earn a Pokemon!</p>
+        <div class="stats">
+            <div>Time: <span id="timer" class="timer">00:00</span></div>
+            <div>Moves: <span id="moves">0</span></div>
+            <div>Matches: <span id="matches">0</span>/8</div>
+            <button class="button" id="reset">New Game</button>
+        </div>
+        <div class="card-grid" id="grid"></div>
+        <div class="footer">Author: Aaron Shi. Released in 2025.</div>
+    </div>
+
+    <div id="congratsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Congratulations!</h2>
+            <p id="congratsMessage"></p>
+            <img id="pokemonImage" alt="Random Pokemon celebration image" width="200" height="200">
+            <button class="button" onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+<script>
+const allPhrases = [
+    ["algorithm", "演算法（n.）"],
+    ["array", "陣列（n.）"],
+    ["boolean", "布林值（n.）"],
+    ["bug", "程式錯誤（n.）"],
+    ["class", "類別（n.）"],
+    ["compiler", "編譯器（n.）"],
+    ["conditional", "條件語句（adj.）"],
+    ["constant", "常數（n.）"],
+    ["constructor", "建構子（n.）"],
+    ["debug", "除錯（v.）"],
+    ["dependency", "依賴（n.）"],
+    ["dictionary", "字典（n.）"],
+    ["exception", "例外（n.）"],
+    ["function", "函數（n.）"],
+    ["class method", "類別方法（n.）"],
+    ["git", "版本控制（n.）"],
+    ["HTML", "超文本標記語言（n.）"],
+    ["IDE", "整合開發環境（n.）"],
+    ["inheritance", "繼承（n.）"],
+    ["input", "輸入（n./v.）"],
+    ["iteration", "迭代（n.）"],
+    ["Go", "Go語言（n.）"],
+    ["JSON", "JavaScript物件表示法（n.）"],
+    ["library", "庫（n.）"],
+    ["loop", "迴圈（n./v.）"],
+    ["method", "方法（n.）"],
+    ["object", "物件（n.）"],
+    ["operator", "運算符（n.）"],
+    ["parameter", "參數（n.）"],
+    ["pointer", "指標（n.）"],
+    ["polling", "輪詢（n.）"],
+    ["query", "查詢（n./v.）"],
+    ["recursion", "遞迴（n.）"],
+    ["refactoring", "重構（n.）"],
+    ["repository", "儲存庫（n.）"],
+    ["response", "回應（n.）"],
+    ["return", "回傳（v.）"],
+    ["runtime", "執行時（n.）"],
+    ["stack", "堆疊（n.）"],
+    ["string", "字串（n.）"],
+    ["syntax", "語法（n.）"],
+    ["variable", "變數（n.）"],
+    ["version control", "版本控制（n.）"],
+    ["void", "空值（n.）"],
+    ["while loop", "while 迴圈（n.）"],
+    ["array index", "陣列索引（n.）"],
+    ["API", "應用程式介面（n.）"],
+    ["backend", "後端（n.）"],
+    ["binary", "二進位（adj.）"],
+    ["break", "跳出（v.）"],
+    ["callback", "回呼函數（n.）"],
+    ["case-sensitive", "區分大小寫（adj.）"],
+    ["class variable", "類別變數（n.）"],
+    ["clone", "克隆（v.）"],
+    ["cloud", "雲端（n.）"],
+    ["compile", "編譯（v.）"],
+    ["conditional statement", "條件語句（n.）"],
+    ["constant value", "常數值（n.）"],
+    ["constructor function", "建構子函數（n.）"],
+    ["CRUD", "增刪查改（n.）"],
+    ["data type", "資料型別（n.）"],
+    ["debugger", "除錯工具（n.）"],
+    ["deploy", "部署（v.）"],
+    ["docker", "容器化平台（n.）"],
+    ["dynamic", "動態的（adj.）"],
+    ["encryption", "加密（n.）"],
+    ["endpoint", "端點（n.）"],
+    ["error handling", "錯誤處理（n.）"],
+    ["event listener", "事件監聽器（n.）"],
+    ["exception handling", "例外處理（n.）"],
+    ["expression", "表達式（n.）"],
+    ["file system", "檔案系統（n.）"],
+    ["flag", "標誌（n.）"],
+    ["for loop", "for 迴圈（n.）"],
+    ["framework", "框架（n.）"],
+    ["front-end", "前端（n.）"],
+    ["function call", "函數呼叫（n.）"],
+    ["garbage collection", "垃圾回收（n.）"],
+    ["git clone", "git 克隆（v.）"],
+    ["global variable", "全域變數（n.）"],
+    ["hash table", "雜湊表（n.）"],
+    ["HTTP", "超文字傳輸協定（n.）"],
+    ["IDE setup", "IDE 設置（n.）"],
+    ["immutable", "不可變的（adj.）"],
+    ["index", "索引（n.）"],
+    ["inherit", "繼承（v.）"],
+    ["interface", "介面（n.）"],
+    ["iterator", "迭代器（n.）"],
+    ["Java", "Java語言（n.）"],
+    ["JSON format", "JSON 格式（n.）"],
+    ["key-value pair", "鍵值對（n.）"],
+    ["lambda function", "匿名函數（n.）"],
+    ["library import", "庫導入（n.）"],
+    ["load balancer", "負載平衡器（n.）"],
+    ["local storage", "本地存儲（n.）"],
+    ["logic error", "邏輯錯誤（n.）"],
+    ["merge", "合併（v.）"],
+    ["method overriding", "方法覆寫（n.）"],
+    ["method signature", "方法簽名（n.）"],
+    ["middleware", "中介軟體（n.）"],
+    ["module", "模組（n.）"],
+    ["node", "節點（n.）"],
+    ["npm", "Node 包管理器（n.）"],
+    ["object-oriented", "物件導向的（adj.）"],
+    ["optimization", "優化（n.）"],
+    ["overflow", "溢位（n.）"],
+    ["package", "套件（n.）"],
+    ["parameter list", "參數列表（n.）"],
+    ["post", "POST 請求（n.）"],
+    ["pointer dereferencing", "指標解引用（n.）"],
+    ["private method", "私有方法（n.）"],
+    ["push", "推送（v.）"],
+    ["query string", "查詢字串（n.）"],
+    ["recursion depth", "遞迴深度（n.）"],
+    ["refactor code", "重構程式碼（v.）"],
+    ["repository", "檔案庫（n.）"],
+    ["return statement", "回傳語句（n.）"],
+    ["runtime error", "執行時錯誤（n.）"],
+    ["server", "伺服器（n.）"],
+    ["session", "會議（n.）"],
+    ["stack trace", "堆疊追蹤（n.）"],
+    ["string manipulation", "字串處理（n.）"],
+    ["syntax error", "語法錯誤（n.）"],
+    ["variable scope", "變數範圍（n.）"],
+    ["version", "版本（n.）"],
+    ["while statement", "while 語句（n.）"]
+];
+
+
+let phrases = [];
+let flippedCards = [];
+let matchedPairs = 0;
+let moves = 0;
+let cards = [];
+let timeStarted = false;
+let timerInterval;
+let seconds = 0;
+
+function selectRandomPhrases() {
+    const shuffledPhrases = [...allPhrases].sort(() => Math.random() - 0.5);
+    return shuffledPhrases.slice(0, 8);
+}
+
+function updateTimer() {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    document.getElementById('timer').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    seconds++;
+}
+
+function startTimer() {
+    if (!timeStarted) {
+        timeStarted = true;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    timeStarted = false;
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function createCard(content, index) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.textContent = '?';
+    card.dataset.index = index;
+    card.dataset.content = content;
+    card.addEventListener('click', () => {
+        startTimer();
+        flipCard(card);
+    });
+    return card;
+}
+
+function flipCard(card) {
+    if (flippedCards.length === 2 || card.classList.contains('matched') || 
+        flippedCards.includes(card)) return;
+
+    card.textContent = card.dataset.content;
+    card.classList.add('flipped');
+    flippedCards.push(card);
+
+    if (flippedCards.length === 2) {
+        moves++;
+        document.getElementById('moves').textContent = moves;
+        checkMatch();
+    }
+}
+
+function checkMatch() {
+    const [card1, card2] = flippedCards;
+    const pair1 = phrases.find(pair => pair.includes(card1.dataset.content));
+    const isMatch = pair1 && pair1.includes(card2.dataset.content);
+
+    setTimeout(() => {
+        if (isMatch) {
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            matchedPairs++;
+            document.getElementById('matches').textContent = matchedPairs;
+            if (matchedPairs === 8) {
+                stopTimer();
+                celebrate();
+            }
+        } else {
+            card1.textContent = '?';
+            card2.textContent = '?';
+            card1.classList.remove('flipped');
+            card2.classList.remove('flipped');
+        }
+        flippedCards = [];
+    }, 1000);
+}
+
+async function celebrate() {
+    const container = document.querySelector('.game-container');
+    container.classList.add('celebration');
+    
+    const pokemonId = Math.floor(Math.random() * 898) + 1;
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
+    const data = await response.json();
+    
+    const currentDate = new Date().toLocaleDateString();
+    const finalTime = document.getElementById('timer').textContent;
+    const congratsMessage = `You spent ${finalTime} and took ${moves} moves to finish this vocabulary concentration on ${currentDate}. You've won ${data.name.charAt(0).toUpperCase() + data.name.slice(1)}!`;
+    
+    document.getElementById('congratsMessage').textContent = congratsMessage;
+    document.getElementById('pokemonImage').src = data.sprites.front_default;
+    document.getElementById('congratsModal').style.display = 'block';
+}
+
+function resetGame() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    flippedCards = [];
+    matchedPairs = 0;
+    moves = 0;
+    seconds = 0;
+    document.getElementById('moves').textContent = moves;
+    document.getElementById('matches').textContent = matchedPairs;
+    document.getElementById('timer').textContent = '00:00';
+    document.getElementById('congratsModal').style.display = 'none';
+    stopTimer();
+    
+    phrases = selectRandomPhrases();
+    cards = [];
+    phrases.forEach(pair => {
+        cards.push(pair[0], pair[1]);
+    });
+    cards = shuffle(cards);
+    
+    cards.forEach((content, index) => {
+        const card = createCard(content, index);
+        grid.appendChild(card);
+    });
+
+    const container = document.querySelector('.game-container');
+    container.classList.remove('celebration');
+}
+
+document.getElementById('reset').addEventListener('click', resetGame);
+document.querySelector('.close-modal').addEventListener('click', () => {
+    document.getElementById('congratsModal').style.display = 'none';
+});
+
+// Initialize the game
+resetGame();
+</script>
+</body></html>
